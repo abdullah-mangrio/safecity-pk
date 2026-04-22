@@ -1,0 +1,7 @@
+from fastapi import FastAPI
+from app.routes import crimes, analytics
+
+app = FastAPI(title="SafeCity PK API")
+
+app.include_router(crimes.router)
+app.inc
