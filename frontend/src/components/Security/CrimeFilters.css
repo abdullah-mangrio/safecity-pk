@@ -1,0 +1,28 @@
+.crime-filters {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.crime-filters label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.crime-filters select {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: #020617;
+  color: var(--text-primary);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+@media (max-width: 800px) {
+  .crime-filters {
+    grid-template-columns: 1fr;
+  }
+}

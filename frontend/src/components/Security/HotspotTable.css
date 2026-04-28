@@ -1,0 +1,23 @@
+.hotspot-table-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 22px;
+}
+
+.hotspot-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.hotspot-table th,
+.hotspot-table td {
+  padding: 13px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  font-size: 14px;
+}
+
+.hotspot-table th {
+  color: var(--text-muted);
+}
