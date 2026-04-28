@@ -1,0 +1,168 @@
+.map-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
+}
+
+.map-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.map-card__header h2 {
+  margin: 0;
+}
+
+.map-card__header p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+}
+
+.city-map {
+  height: 420px;
+  border-radius: 18px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.055) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px),
+    radial-gradient(circle at 20% 30%, rgba(59,130,246,0.16), transparent 22%),
+    radial-gradient(circle at 75% 65%, rgba(239,68,68,0.18), transparent 22%),
+    #020617;
+  background-size: 44px 44px, 44px 44px, auto, auto, auto;
+}
+
+.map-road {
+  position: absolute;
+  background: rgba(148, 163, 184, 0.14);
+  border-radius: 999px;
+}
+
+.road-1 {
+  width: 90%;
+  height: 10px;
+  top: 34%;
+  left: 5%;
+  transform: rotate(-8deg);
+}
+
+.road-2 {
+  width: 85%;
+  height: 8px;
+  top: 64%;
+  left: 8%;
+  transform: rotate(14deg);
+}
+
+.road-3 {
+  width: 8px;
+  height: 85%;
+  top: 8%;
+  left: 52%;
+  transform: rotate(10deg);
+}
+
+.map-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.map-marker > span {
+  display: block;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+.marker-critical > span {
+  background: var(--danger);
+  animation: dangerPulse 1.2s infinite;
+}
+
+.marker-high > span {
+  background: var(--danger);
+  animation: dangerPulse 1.6s infinite;
+}
+
+.marker-medium > span {
+  background: var(--warning);
+}
+
+.marker-low > span {
+  background: var(--success);
+}
+
+@keyframes dangerPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.75);
+  }
+  70% {
+    box-shadow: 0 0 0 22px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.marker-label {
+  position: absolute;
+  top: 22px;
+  left: 12px;
+  min-width: 110px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.marker-label small {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.map-legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.map-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+  border-radius: 50%;
+}
+
+.legend.critical,
+.legend.high {
+  background: var(--danger);
+}
+
+.legend.medium {
+  background: var(--warning);
+}
+
+.legend.low {
+  background: var(--success);
+}
