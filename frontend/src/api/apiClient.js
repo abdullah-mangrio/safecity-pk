@@ -88,3 +88,22 @@ export async function updateReportStatus(id, status) {
     method: "PATCH",
   })
 }
+
+export async function submitPublicReport(payload) {
+  return await apiRequest("/reports/public", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function getReportsByStatus(status = "pending") {
+  try {
+    return await apiRequest(`/reports/public?status=${status}`)
+  } catch (error) {
+    console.error("API ERROR getReportsByStatus:", error)
+    return []
+  }
+}

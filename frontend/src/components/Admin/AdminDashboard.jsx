@@ -1,26 +1,27 @@
 import { useEffect, useState } from "react"
 import { mockUsers, mockPlatformStats } from "../../data/mockData"
-import { getPendingReports, updateReportStatus } from "../../api/apiClient"
+import { getReportsByStatus, updateReportStatus } from "../../api/apiClient"
 import Badge from "../Common/Badge"
 import StatCard from "../Common/StatCard"
 import "./AdminDashboard.css"
 
 function AdminDashboard({ onBack }) {
-  const [pendingReports, setPendingReports] = useState([])
+  const [activeTab, setActiveTab] = useState("pending")
+  const [reports, setReports] = useState([])
   const [loadingReports, setLoadingReports] = useState(true)
   const [actionLoadingId, setActionLoadingId] = useState(null)
   const [error, setError] = useState("")
 
-  async function loadPendingReports() {
+  async function loadReports(status) {
     try {
       setLoadingReports(true)
       setError("")
 
-      const data = await getPendingReports()
-      setPendingReports(data)
+      const data = await getReportsByStatus(status)
+      setReports(data)
     } catch (err) {
-      console.error("Failed to load pending reports:", err)
-      setError("Failed to load pending reports.")
+      console.error("Failed to load reports:", err)
+      setError("Failed to load reports.")
     } finally {
       setLoadingReports(false)
     }
@@ -32,10 +33,7 @@ function AdminDashboard({ onBack }) {
       setError("")
 
       await updateReportStatus(reportId, status)
-
-      setPendingReports((currentReports) =>
-        currentReports.filter((report) => report.id !== reportId)
-      )
+      await loadReports(activeTab)
     } catch (err) {
       console.error("Failed to update report status:", err)
       setError("Failed to update report status.")
@@ -45,8 +43,8 @@ function AdminDashboard({ onBack }) {
   }
 
   useEffect(() => {
-    loadPendingReports()
-  }, [])
+    loadReports(activeTab)
+  }, [activeTab])
 
   return (
     <main className="admin-dashboard">
@@ -63,7 +61,7 @@ function AdminDashboard({ onBack }) {
       <section className="admin-stats">
         <StatCard icon="👥" label="Total Users" value={mockPlatformStats.totalUsers} />
         <StatCard icon="🛡️" label="Security Officers" value={mockPlatformStats.securityOfficers} />
-        <StatCard icon="⏳" label="Pending Reports" value={pendingReports.length} color="amber" />
+        <StatCard icon="⏳" label="Current Tab Reports" value={reports.length} color="amber" />
         <StatCard icon="📊" label="Reports" value={mockPlatformStats.totalReports} />
       </section>
 
@@ -73,43 +71,72 @@ function AdminDashboard({ onBack }) {
         <section className="admin-card">
           <h2>Public Report Review</h2>
 
+          <div className="admin-tabs">
+            <button
+              className={activeTab === "pending" ? "active" : ""}
+              onClick={() => setActiveTab("pending")}
+            >
+              Pending
+            </button>
+
+            <button
+              className={activeTab === "verified" ? "active" : ""}
+              onClick={() => setActiveTab("verified")}
+            >
+              Verified
+            </button>
+
+            <button
+              className={activeTab === "rejected" ? "active" : ""}
+              onClick={() => setActiveTab("rejected")}
+            >
+              Rejected
+            </button>
+          </div>
+
           {loadingReports ? (
-            <p className="empty-state">Loading pending reports...</p>
-          ) : pendingReports.length === 0 ? (
-            <p className="empty-state">No pending public reports.</p>
+            <p className="empty-state">Loading reports...</p>
+          ) : reports.length === 0 ? (
+            <p className="empty-state">No {activeTab} reports.</p>
           ) : (
-            pendingReports.map((report) => (
+            reports.map((report) => (
               <div key={report.id} className="approval-card">
                 <div>
                   <strong>
                     #{report.id} — {report.crime_type}
                   </strong>
+
                   <p>
                     {report.area}, {report.city}
                   </p>
+
                   <small>
-                    Severity: {report.severity} • Date: {report.incident_date}
+                    Severity: {report.severity} • Date: {report.incident_date} • Status:{" "}
+                    {report.status}
                   </small>
+
                   <p>{report.description}</p>
                 </div>
 
-                <div className="approval-actions">
-                  <button
-                    className="approve"
-                    disabled={actionLoadingId === report.id}
-                    onClick={() => handleReportAction(report.id, "verified")}
-                  >
-                    {actionLoadingId === report.id ? "Working..." : "Verify"}
-                  </button>
+                {activeTab === "pending" && (
+                  <div className="approval-actions">
+                    <button
+                      className="approve"
+                      disabled={actionLoadingId === report.id}
+                      onClick={() => handleReportAction(report.id, "verified")}
+                    >
+                      {actionLoadingId === report.id ? "Working..." : "Verify"}
+                    </button>
 
-                  <button
-                    className="reject"
-                    disabled={actionLoadingId === report.id}
-                    onClick={() => handleReportAction(report.id, "rejected")}
-                  >
-                    {actionLoadingId === report.id ? "Working..." : "Reject"}
-                  </button>
-                </div>
+                    <button
+                      className="reject"
+                      disabled={actionLoadingId === report.id}
+                      onClick={() => handleReportAction(report.id, "rejected")}
+                    >
+                      {actionLoadingId === report.id ? "Working..." : "Reject"}
+                    </button>
+                  </div>
+                )}
               </div>
             ))
           )}

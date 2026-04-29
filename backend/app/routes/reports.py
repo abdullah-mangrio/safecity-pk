@@ -66,19 +66,23 @@ def submit_public_report(payload: PublicReportCreate):
             conn.rollback()
 
         print("REPORT SUBMISSION ERROR:", repr(e))
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(e),
-        )
+        raise HTTPException(status_code=500, detail=str(e))
 
     finally:
         if conn:
             conn.close()
 
 
-@router.get("/public/pending")
-def get_pending_public_reports():
+@router.get("/public")
+def get_public_reports(status: str = "pending"):
+    allowed_statuses = {"pending", "verified", "rejected"}
+
+    if status not in allowed_statuses:
+        raise HTTPException(
+            status_code=400,
+            detail="Status must be one of: pending, verified, rejected.",
+        )
+
     conn = None
 
     try:
@@ -102,26 +106,26 @@ def get_pending_public_reports():
                     source,
                     created_at
                 FROM public_reports
-                WHERE status = 'pending'
+                WHERE status = %s
                 ORDER BY created_at DESC;
-                """
+                """,
+                (status,),
             )
 
-            reports = cur.fetchall()
-
-        return reports
+            return cur.fetchall()
 
     except Exception as e:
-        print("FETCH PENDING REPORTS ERROR:", repr(e))
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(e),
-        )
+        print("FETCH PUBLIC REPORTS ERROR:", repr(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
     finally:
         if conn:
             conn.close()
+
+
+@router.get("/public/pending")
+def get_pending_public_reports():
+    return get_public_reports(status="pending")
 
 
 @router.patch("/public/{report_id}/status")
@@ -153,10 +157,7 @@ def update_public_report_status(report_id: int, new_status: str):
             updated_report = cur.fetchone()
 
             if not updated_report:
-                raise HTTPException(
-                    status_code=404,
-                    detail="Report not found.",
-                )
+                raise HTTPException(status_code=404, detail="Report not found.")
 
             conn.commit()
 
@@ -176,11 +177,7 @@ def update_public_report_status(report_id: int, new_status: str):
             conn.rollback()
 
         print("UPDATE REPORT STATUS ERROR:", repr(e))
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(e),
-        )
+        raise HTTPException(status_code=500, detail=str(e))
 
     finally:
         if conn:

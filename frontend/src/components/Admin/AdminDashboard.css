@@ -88,3 +88,25 @@ th, td {
   padding: 10px;
   border-bottom: 1px solid var(--border);
 }
+
+.admin-tabs {
+  display: flex;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.admin-tabs button {
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #cbd5e1;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.admin-tabs button.active {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
