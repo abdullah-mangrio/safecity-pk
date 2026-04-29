@@ -166,3 +166,11 @@
 .legend.low {
   background: var(--success);
 }
+
+.map-loading {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
