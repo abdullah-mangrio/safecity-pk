@@ -1,7 +1,7 @@
 # backend/app/main.py
 
 from fastapi import FastAPI
-from app.routes import crimes, analytics
+from app.routes import crimes, analytics, reports
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="SafeCity PK API")
@@ -19,6 +19,7 @@ app.add_middleware(
 
 app.include_router(crimes.router)
 app.include_router(analytics.router)
+app.include_router(reports.router)
 
 @app.get("/")
 def root():
