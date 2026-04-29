@@ -1,11 +1,22 @@
 const BASE_URL = "http://127.0.0.1:8000"
 
-// --------------------
-// GET ALL CRIMES
-// --------------------
-export async function fetchCrimes() {
+function severityLabel(value) {
+  if (value >= 5) return "critical"
+  if (value >= 4) return "high"
+  if (value >= 3) return "medium"
+  return "low"
+}
+
+function riskLabel(totalCrimes) {
+  if (totalCrimes >= 3) return "high"
+  if (totalCrimes === 2) return "medium"
+  return "low"
+}
+
+export async function fetchCrimes(params = {}) {
   try {
-    const response = await fetch(`${BASE_URL}/crimes`)
+    const query = new URLSearchParams(params).toString()
+    const response = await fetch(`${BASE_URL}/crimes?${query}`)
 
     if (!response.ok) {
       throw new Error("Failed to fetch crimes")
@@ -13,25 +24,21 @@ export async function fetchCrimes() {
 
     const data = await response.json()
 
-    // Normalize backend → frontend format
-    return data.map((item) => ({
-      id: item.id,
-      type: item.crime_type,
-      city: item.city,
-      area: item.area,
-      severity: item.severity,
-      status: item.status,
-      date: item.reported_at,
+    return data.map((crime) => ({
+      id: crime.incident_id,
+      type: crime.incident_type,
+      city: crime.city,
+      area: crime.area,
+      severity: severityLabel(crime.severity),
+      status: crime.status,
+      date: crime.occurred_at?.slice(0, 10),
     }))
   } catch (error) {
-    console.error("API ERROR (fetchCrimes):", error)
+    console.error("API ERROR fetchCrimes:", error)
     return []
   }
 }
 
-// --------------------
-// GET HOTSPOTS
-// --------------------
 export async function fetchHotspots() {
   try {
     const response = await fetch(`${BASE_URL}/analytics/hotspots`)
@@ -42,22 +49,20 @@ export async function fetchHotspots() {
 
     const data = await response.json()
 
-    return data.map((item, index) => ({
-      id: index,
-      area: item.area,
-      city: item.city,
-      risk_level: item.risk_level,
-      count: item.count,
+    return data.map((spot, index) => ({
+      id: index + 1,
+      area: spot.area,
+      city: "N/A",
+      incidents: spot.total_crimes,
+      riskLevel: riskLabel(spot.total_crimes),
+      trend: "active",
     }))
   } catch (error) {
-    console.error("API ERROR (fetchHotspots):", error)
+    console.error("API ERROR fetchHotspots:", error)
     return []
   }
 }
 
-// --------------------
-// GET DANGEROUS HOURS
-// --------------------
 export async function fetchDangerousHours() {
   try {
     const response = await fetch(`${BASE_URL}/analytics/dangerous-hours`)
@@ -68,7 +73,7 @@ export async function fetchDangerousHours() {
 
     return await response.json()
   } catch (error) {
-    console.error("API ERROR (dangerous-hours):", error)
+    console.error("API ERROR fetchDangerousHours:", error)
     return []
   }
 }
