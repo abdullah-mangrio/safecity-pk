@@ -74,9 +74,9 @@ export async function fetchDangerousHours() {
   }
 }
 
-export async function getPendingReports() {
+export async function getPendingReports(status = "pending") {
   try {
-    return await apiRequest("/reports/public/pending")
+    return await apiRequest(`/reports/public?status=${status}`)
   } catch (error) {
     console.error("API ERROR getPendingReports:", error)
     return []
@@ -105,5 +105,36 @@ export async function getReportsByStatus(status = "pending") {
   } catch (error) {
     console.error("API ERROR getReportsByStatus:", error)
     return []
+  }
+}
+
+
+export const getUsers = async () => {
+  const res = await fetch(`${BASE_URL}/admin/users`);
+  return res.json();
+};
+
+export const deactivateUser = async (userId) => {
+  const res = await fetch(
+    `${BASE_URL}/admin/users/${userId}/deactivate`,
+    {
+      method: "PATCH",
+    }
+  );
+  return res.json();
+};
+
+export async function getAdminStats() {
+  try {
+    return await apiRequest("/admin/stats")
+  } catch (error) {
+    console.error("API ERROR getAdminStats:", error)
+
+    return {
+      total_users: 0,
+      security_officers: 0,
+      total_reports: 0,
+      pending_reports: 0,
+    }
   }
 }

@@ -4,7 +4,9 @@ import SafetyTipPopup from "../Common/SafetyTipPopup"
 import Badge from "../Common/Badge"
 import NoticeBoard from "../Common/NoticeBoard"
 import AreaSafetyMap from "./AreaSafetyMap"
+import ReportForm from "./ReportForm"
 import "./PublicDashboard.css"
+
 
 function PublicDashboard({ onBack }) {
   const latestAlert = mockAlerts[0]
@@ -30,7 +32,7 @@ function PublicDashboard({ onBack }) {
       <section className="public-grid">
         <div className="public-main">
           <AreaSafetyMap />
-
+	  <ReportForm />
           <section className="report-card">
             <div className="section-heading">
               <h2>My Reports</h2>

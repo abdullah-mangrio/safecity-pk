@@ -111,3 +111,76 @@
     flex-direction: column;
   }
 }
+
+.report-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.report-form input,
+.report-form select,
+.report-form textarea {
+  width: 100%;
+  border: 1px solid #26344d;
+  background: #081224;
+  color: #e5eefc;
+  border-radius: 10px;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.report-form textarea {
+  resize: vertical;
+}
+
+.report-form button {
+  border: none;
+  background: #2563eb;
+  color: white;
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.report-form button:disabled {
+  background: #64748b;
+  cursor: not-allowed;
+}
+
+.success-box {
+  margin-top: 12px;
+  border: 1px solid #22c55e;
+  background: rgba(34, 197, 94, 0.12);
+  color: #86efac;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.error-box {
+  margin-top: 12px;
+  border: 1px solid #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.muted {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
