@@ -13,16 +13,24 @@ function riskLabel(totalCrimes) {
   return "low"
 }
 
+async function apiRequest(path, options = {}) {
+  const response = await fetch(`${BASE_URL}${path}`, options)
+
+  const data = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    throw new Error(data?.detail || "API request failed")
+  }
+
+  return data
+}
+
 export async function fetchCrimes(params = {}) {
   try {
     const query = new URLSearchParams(params).toString()
-    const response = await fetch(`${BASE_URL}/crimes?${query}`)
+    const endpoint = query ? `/crimes?${query}` : "/crimes"
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch crimes")
-    }
-
-    const data = await response.json()
+    const data = await apiRequest(endpoint)
 
     return data.map((crime) => ({
       id: crime.incident_id,
@@ -41,13 +49,7 @@ export async function fetchCrimes(params = {}) {
 
 export async function fetchHotspots() {
   try {
-    const response = await fetch(`${BASE_URL}/analytics/hotspots`)
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch hotspots")
-    }
-
-    const data = await response.json()
+    const data = await apiRequest("/analytics/hotspots")
 
     return data.map((spot, index) => ({
       id: index + 1,
@@ -65,15 +67,24 @@ export async function fetchHotspots() {
 
 export async function fetchDangerousHours() {
   try {
-    const response = await fetch(`${BASE_URL}/analytics/dangerous-hours`)
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch dangerous hours")
-    }
-
-    return await response.json()
+    return await apiRequest("/analytics/dangerous-hours")
   } catch (error) {
     console.error("API ERROR fetchDangerousHours:", error)
     return []
   }
+}
+
+export async function getPendingReports() {
+  try {
+    return await apiRequest("/reports/public/pending")
+  } catch (error) {
+    console.error("API ERROR getPendingReports:", error)
+    return []
+  }
+}
+
+export async function updateReportStatus(id, status) {
+  return await apiRequest(`/reports/public/${id}/status?new_status=${status}`, {
+    method: "PATCH",
+  })
 }
