@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react"
-import { fetchCrimes, fetchHotspots } from "../../api/apiClient"
-import { mockPublicReports } from "../../data/mockData"
+import {
+  fetchCrimes,
+  fetchHotspots,
+  getReportsByStatus,
+  updateReportStatus,
+} from "../../api/apiClient"
 import StatCard from "../Common/StatCard"
 import Badge from "../Common/Badge"
 import CrimeFilters from "./CrimeFilters"
@@ -16,26 +20,40 @@ function SecurityDashboard({ onBack }) {
 
   const [crimes, setCrimes] = useState([])
   const [hotspots, setHotspots] = useState([])
+  const [pendingReports, setPendingReports] = useState([])
+  const [verifiedReports, setVerifiedReports] = useState([])
   const [loading, setLoading] = useState(true)
+  const [actionLoadingId, setActionLoadingId] = useState(null)
+
+  async function loadDashboardData() {
+    try {
+      setLoading(true)
+
+      const [
+        crimesData,
+        hotspotsData,
+        pendingReportsData,
+        verifiedReportsData,
+      ] = await Promise.all([
+        fetchCrimes(),
+        fetchHotspots(),
+        getReportsByStatus("pending"),
+        getReportsByStatus("verified"),
+      ])
+
+      setCrimes(crimesData)
+      setHotspots(hotspotsData)
+      setPendingReports(pendingReportsData)
+      setVerifiedReports(verifiedReportsData)
+    } catch (error) {
+      console.error("Failed to load security dashboard data:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true)
-
-        const crimesData = await fetchCrimes()
-        const hotspotsData = await fetchHotspots()
-
-        setCrimes(crimesData)
-        setHotspots(hotspotsData)
-      } catch (error) {
-        console.error("Failed to load security dashboard data:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadData()
+    loadDashboardData()
   }, [])
 
   const filteredCrimes = useMemo(() => {
@@ -52,11 +70,22 @@ function SecurityDashboard({ onBack }) {
     (crime) => crime.severity === "high" || crime.severity === "critical"
   ).length
 
-  const openCases = crimes.filter((crime) => crime.status === "open").length
-
-  const verifiedReports = mockPublicReports.filter(
-    (report) => report.status === "verified"
+  const openCases = crimes.filter(
+    (crime) => crime.status === "reported" || crime.status === "under_review"
   ).length
+
+  async function handleReportAction(reportId, newStatus) {
+    try {
+      setActionLoadingId(reportId)
+      await updateReportStatus(reportId, newStatus)
+      await loadDashboardData()
+    } catch (error) {
+      console.error(`Failed to ${newStatus} report:`, error)
+      alert(`Failed to ${newStatus} report. Please try again.`)
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
 
   return (
     <main className="security-dashboard">
@@ -100,7 +129,7 @@ function SecurityDashboard({ onBack }) {
         <StatCard
           icon="✅"
           label="Verified Reports"
-          value={verifiedReports}
+          value={verifiedReports.length}
           subtext="Citizen reports verified"
           color="green"
         />
@@ -125,6 +154,8 @@ function SecurityDashboard({ onBack }) {
 
             {loading ? (
               <p>Loading crime records...</p>
+            ) : filteredCrimes.length === 0 ? (
+              <p>No crime records found for selected filters.</p>
             ) : (
               <table className="crime-table">
                 <thead>
@@ -141,16 +172,20 @@ function SecurityDashboard({ onBack }) {
                 <tbody>
                   {filteredCrimes.map((crime) => (
                     <tr key={crime.id}>
-                      <td>{crime.type || crime.crime_type}</td>
+                      <td>{crime.type}</td>
                       <td>{crime.city}</td>
                       <td>{crime.area}</td>
                       <td>
-                        <Badge variant={crime.severity}>{crime.severity}</Badge>
+                        <Badge variant={crime.severity}>
+                          {crime.severity}
+                        </Badge>
                       </td>
                       <td>
-                        <Badge variant={crime.status}>{crime.status}</Badge>
+                        <Badge variant={crime.status}>
+                          {crime.status}
+                        </Badge>
                       </td>
-                      <td>{crime.date || crime.reported_at}</td>
+                      <td>{crime.date}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -168,24 +203,53 @@ function SecurityDashboard({ onBack }) {
               <p>Citizen submissions awaiting review</p>
             </div>
 
-            {mockPublicReports.map((report) => (
-              <article key={report.id} className="public-report-card">
-                <div className="report-top">
-                  <Badge variant={report.priority}>{report.priority}</Badge>
-                  <Badge variant={report.status}>{report.status}</Badge>
-                </div>
+            {loading ? (
+              <p>Loading public reports...</p>
+            ) : pendingReports.length === 0 ? (
+              <p>No pending public reports.</p>
+            ) : (
+              pendingReports.map((report) => (
+                <article key={report.report_id} className="public-report-card">
+                  <div className="report-top">
+                    <Badge variant={report.severity || "medium"}>
+                      {report.severity || "medium"}
+                    </Badge>
+                    <Badge variant={report.status}>{report.status}</Badge>
+                  </div>
 
-                <h3>{report.title}</h3>
-                <p>
-                  {report.type} • {report.area}, {report.city}
-                </p>
+                  <h3>{report.title}</h3>
+                  <p>
+                    {report.incident_type} • {report.area}, {report.city}
+                  </p>
 
-                <div className="report-actions">
-                  <button className="verify-btn">Verify</button>
-                  <button className="reject-btn">Reject</button>
-                </div>
-              </article>
-            ))}
+                  <div className="report-actions">
+                    <button
+                      className="verify-btn"
+                      disabled={actionLoadingId === report.report_id}
+                      onClick={() =>
+                        handleReportAction(report.report_id, "verified")
+                      }
+                    >
+                      {actionLoadingId === report.report_id
+                        ? "Saving..."
+                        : "Verify"}
+                    </button>
+
+                    <button
+                      className="reject-btn"
+                      disabled={actionLoadingId === report.report_id}
+                      onClick={() =>
+                        handleReportAction(report.report_id, "rejected")
+                      }
+                    >
+                      {actionLoadingId === report.report_id
+                        ? "Saving..."
+                        : "Reject"}
+                    </button>
+                  </div>
+                </article>
+              ))
+            )}
           </section>
 
           <section className="analytics-card">

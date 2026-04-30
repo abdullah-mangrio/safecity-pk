@@ -13,7 +13,27 @@ const initialForm = {
   incident_time: "",
 }
 
-function ReportForm() {
+function getReportId(report) {
+  return report.report_id || report.id
+}
+
+function saveReportToLocalStorage(report) {
+  const reportId = getReportId(report)
+
+  if (!reportId) return
+
+  const savedReports = JSON.parse(
+    localStorage.getItem("safecity_my_reports") || "[]"
+  )
+
+  if (!savedReports.includes(reportId)) {
+    savedReports.push(reportId)
+  }
+
+  localStorage.setItem("safecity_my_reports", JSON.stringify(savedReports))
+}
+
+function ReportForm({ onReportSubmitted }) {
   const [form, setForm] = useState(initialForm)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState("")
@@ -29,9 +49,11 @@ function ReportForm() {
     if (!form.area.trim()) return "Area is required."
     if (!form.crime_type.trim()) return "Crime type is required."
     if (!form.incident_date) return "Incident date is required."
+
     if (form.description.trim().length < 10) {
       return "Description must be at least 10 characters."
     }
+
     return null
   }
 
@@ -61,13 +83,23 @@ function ReportForm() {
 
     try {
       setLoading(true)
+
       const result = await submitPublicReport(payload)
+      const reportId = getReportId(result)
+
+      saveReportToLocalStorage(result)
 
       setMessage(
-        `Report submitted successfully. Tracking ID: #${result.id}. Status: ${result.status}.`
+        `Report submitted successfully. Tracking ID: RPT-${String(
+          reportId
+        ).padStart(4, "0")}. Status: ${result.status || "pending"}.`
       )
 
       setForm(initialForm)
+
+      if (onReportSubmitted) {
+        await onReportSubmitted()
+      }
     } catch (err) {
       console.error("Report submit failed:", err)
       setError(err.message || "Failed to submit report.")

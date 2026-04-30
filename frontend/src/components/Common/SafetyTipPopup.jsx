@@ -1,13 +1,24 @@
 import { useEffect, useState } from "react"
-import { SAFETY_TIPS } from "../../data/mockData"
 import "./SafetyTipPopup.css"
+
+const SAFETY_TIPS = [
+  "Avoid poorly lit areas at night and stay in populated zones.",
+  "Immediately report suspicious activity through SafeCity PK.",
+  "Do not share personal information with unknown individuals.",
+  "Stay alert in crowded places and secure your belongings.",
+  "In case of emergency, contact local authorities immediately.",
+  "Avoid unnecessary travel during high-risk hours.",
+  "Keep emergency contacts easily accessible.",
+]
 
 function SafetyTipPopup() {
   const [tip, setTip] = useState(null)
 
   useEffect(() => {
     const showTip = () => {
-      const random = SAFETY_TIPS[Math.floor(Math.random() * SAFETY_TIPS.length)]
+      const random =
+        SAFETY_TIPS[Math.floor(Math.random() * SAFETY_TIPS.length)]
+
       setTip(random)
 
       setTimeout(() => {
