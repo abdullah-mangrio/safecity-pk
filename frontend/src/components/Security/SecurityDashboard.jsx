@@ -35,7 +35,7 @@ function SecurityDashboard({ onBack }) {
         pendingReportsData,
         verifiedReportsData,
       ] = await Promise.all([
-        fetchCrimes(),
+        fetchCrimes(filters),
         fetchHotspots(),
         getReportsByStatus("pending"),
         getReportsByStatus("verified"),
@@ -53,18 +53,10 @@ function SecurityDashboard({ onBack }) {
   }
 
   useEffect(() => {
-    loadDashboardData()
-  }, [])
+  loadDashboardData()
+}, [filters])
 
-  const filteredCrimes = useMemo(() => {
-    return crimes.filter((crime) => {
-      const cityMatch = !filters.city || crime.city === filters.city
-      const severityMatch = !filters.severity || crime.severity === filters.severity
-      const statusMatch = !filters.status || crime.status === filters.status
 
-      return cityMatch && severityMatch && statusMatch
-    })
-  }, [crimes, filters])
 
   const highSeverityCount = crimes.filter(
     (crime) => crime.severity === "high" || crime.severity === "critical"
@@ -153,8 +145,8 @@ function SecurityDashboard({ onBack }) {
             </div>
 
             {loading ? (
-              <p>Loading crime records...</p>
-            ) : filteredCrimes.length === 0 ? (
+              <p className="muted">Loading data...</p>
+            ) : crimes.length === 0 ? (
               <p>No crime records found for selected filters.</p>
             ) : (
               <table className="crime-table">
@@ -170,7 +162,7 @@ function SecurityDashboard({ onBack }) {
                 </thead>
 
                 <tbody>
-                  {filteredCrimes.map((crime) => (
+                  {crimes.map((crime) => (
                     <tr key={crime.id}>
                       <td>{crime.type}</td>
                       <td>{crime.city}</td>
@@ -209,7 +201,7 @@ function SecurityDashboard({ onBack }) {
               <p>No pending public reports.</p>
             ) : (
               pendingReports.map((report) => (
-                <article key={report.report_id} className="public-report-card">
+                <article key={report.id} className="public-report-card">
                   <div className="report-top">
                     <Badge variant={report.severity || "medium"}>
                       {report.severity || "medium"}
@@ -217,7 +209,7 @@ function SecurityDashboard({ onBack }) {
                     <Badge variant={report.status}>{report.status}</Badge>
                   </div>
 
-                  <h3>{report.title}</h3>
+                  <h3>{report.crime_type || "Public Report"}</h3>
                   <p>
                     {report.incident_type} • {report.area}, {report.city}
                   </p>
@@ -225,24 +217,25 @@ function SecurityDashboard({ onBack }) {
                   <div className="report-actions">
                     <button
                       className="verify-btn"
-                      disabled={actionLoadingId === report.report_id}
-                      onClick={() =>
-                        handleReportAction(report.report_id, "verified")
-                      }
+                      disabled={actionLoadingId === report.id}
+			onClick={() => 
+			handleReportAction(report.id, "verified")
+		      }
+                      
                     >
-                      {actionLoadingId === report.report_id
+                      {actionLoadingId === report.id
                         ? "Saving..."
                         : "Verify"}
                     </button>
 
                     <button
                       className="reject-btn"
-                      disabled={actionLoadingId === report.report_id}
-                      onClick={() =>
-                        handleReportAction(report.report_id, "rejected")
-                      }
+                      disabled={actionLoadingId === report.id}
+			onClick={() => 
+			handleReportAction(report.id, "rejected")
+		      }
                     >
-                      {actionLoadingId === report.report_id
+                      {actionLoadingId === report.id
                         ? "Saving..."
                         : "Reject"}
                     </button>

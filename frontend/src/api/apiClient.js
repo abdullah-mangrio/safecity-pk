@@ -13,6 +13,17 @@ function riskLabel(totalCrimes) {
   return "low"
 }
 
+function severityValue(label) {
+  const map = {
+    low: 2,
+    medium: 3,
+    high: 4,
+    critical: 5,
+  }
+
+  return map[label] || ""
+}
+
 async function apiRequest(path, options = {}) {
   const response = await fetch(`${BASE_URL}${path}`, options)
 
@@ -27,7 +38,15 @@ async function apiRequest(path, options = {}) {
 
 export async function fetchCrimes(params = {}) {
   try {
-    const query = new URLSearchParams(params).toString()
+    const cleanParams = {}
+
+    if (params.city) cleanParams.city = params.city
+    if (params.status) cleanParams.status = params.status
+    if (params.severity) cleanParams.severity = severityValue(params.severity)
+    if (params.date_from) cleanParams.date_from = params.date_from
+    if (params.date_to) cleanParams.date_to = params.date_to
+
+    const query = new URLSearchParams(cleanParams).toString()
     const endpoint = query ? `/crimes?${query}` : "/crimes"
 
     const data = await apiRequest(endpoint)
