@@ -7,6 +7,14 @@ from app.schemas import PublicReportCreate, PublicReportResponse
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
 
+SEVERITY_TO_NUMBER = {
+    "low": 2,
+    "medium": 3,
+    "high": 4,
+    "critical": 5,
+}
+
+
 @router.post(
     "/public",
     response_model=PublicReportResponse,
@@ -128,6 +136,159 @@ def get_pending_public_reports():
     return get_public_reports(status="pending")
 
 
+def get_or_create_city(cur, city_name: str):
+    cur.execute(
+        """
+        SELECT city_id
+        FROM city
+        WHERE LOWER(name) = LOWER(%s);
+        """,
+        (city_name,),
+    )
+    city = cur.fetchone()
+
+    if city:
+        return city["city_id"]
+
+    cur.execute(
+        """
+        INSERT INTO city (name, province)
+        VALUES (%s, %s)
+        RETURNING city_id;
+        """,
+        (city_name, "Unknown"),
+    )
+
+    return cur.fetchone()["city_id"]
+
+
+def get_or_create_area(cur, city_id: int, area_name: str):
+    cur.execute(
+        """
+        SELECT area_id
+        FROM area
+        WHERE city_id = %s
+          AND LOWER(name) = LOWER(%s);
+        """,
+        (city_id, area_name),
+    )
+    area = cur.fetchone()
+
+    if area:
+        return area["area_id"]
+
+    cur.execute(
+        """
+        INSERT INTO area (city_id, name)
+        VALUES (%s, %s)
+        RETURNING area_id;
+        """,
+        (city_id, area_name),
+    )
+
+    return cur.fetchone()["area_id"]
+
+
+def get_or_create_incident_type(cur, crime_type: str):
+    cur.execute(
+        """
+        SELECT incident_type_id
+        FROM incident_type
+        WHERE LOWER(name) = LOWER(%s);
+        """,
+        (crime_type,),
+    )
+    incident_type = cur.fetchone()
+
+    if incident_type:
+        return incident_type["incident_type_id"]
+
+    cur.execute(
+        """
+        INSERT INTO incident_type (name, category)
+        VALUES (%s, %s)
+        RETURNING incident_type_id;
+        """,
+        (crime_type, "Public Report"),
+    )
+
+    return cur.fetchone()["incident_type_id"]
+
+
+def public_report_already_promoted(cur, report_id: int):
+    cur.execute(
+        """
+        SELECT incident_id
+        FROM incident
+        WHERE source = 'public'
+          AND description LIKE %s
+        LIMIT 1;
+        """,
+        (f"%Public Report ID: {report_id}%",),
+    )
+
+    return cur.fetchone()
+
+
+def promote_public_report_to_incident(cur, report):
+    existing_incident = public_report_already_promoted(cur, report["id"])
+
+    if existing_incident:
+        return existing_incident["incident_id"]
+
+    city_id = get_or_create_city(cur, report["city"])
+    area_id = get_or_create_area(cur, city_id, report["area"])
+    incident_type_id = get_or_create_incident_type(cur, report["crime_type"])
+
+    severity_number = SEVERITY_TO_NUMBER.get(report["severity"], 3)
+
+    incident_time = report["incident_time"] or "00:00:00"
+    occurred_at = f"{report['incident_date']} {incident_time}"
+
+    title = report["crime_type"]
+    description = (
+        f"{report['description']}\n\n"
+        f"Promoted from verified public report. "
+        f"Public Report ID: {report['id']}"
+    )
+
+    cur.execute(
+        """
+        INSERT INTO incident (
+            city_id,
+            area_id,
+            incident_type_id,
+            occurred_at,
+            severity,
+            status,
+            title,
+            description,
+            source,
+            reported_by
+        )
+        VALUES (
+            %s, %s, %s, %s,
+            %s, 'verified',
+            %s, %s,
+            'public',
+            NULL
+        )
+        RETURNING incident_id;
+        """,
+        (
+            city_id,
+            area_id,
+            incident_type_id,
+            occurred_at,
+            severity_number,
+            title,
+            description,
+        ),
+    )
+
+    return cur.fetchone()["incident_id"]
+
+
 @router.patch("/public/{report_id}/status")
 def update_public_report_status(report_id: int, new_status: str):
     allowed_statuses = {"verified", "rejected"}
@@ -146,6 +307,32 @@ def update_public_report_status(report_id: int, new_status: str):
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 """
+                SELECT
+                    id,
+                    city,
+                    area,
+                    crime_type,
+                    severity,
+                    description,
+                    incident_date,
+                    incident_time,
+                    status
+                FROM public_reports
+                WHERE id = %s
+                FOR UPDATE;
+                """,
+                (report_id,),
+            )
+
+            report = cur.fetchone()
+
+            if not report:
+                raise HTTPException(status_code=404, detail="Report not found.")
+
+            promoted_incident_id = None
+
+            cur.execute(
+                """
                 UPDATE public_reports
                 SET status = %s
                 WHERE id = %s
@@ -156,15 +343,20 @@ def update_public_report_status(report_id: int, new_status: str):
 
             updated_report = cur.fetchone()
 
-            if not updated_report:
-                raise HTTPException(status_code=404, detail="Report not found.")
+            if new_status == "verified":
+                promoted_incident_id = promote_public_report_to_incident(cur, report)
 
             conn.commit()
 
         return {
             "id": updated_report["id"],
             "status": updated_report["status"],
-            "message": f"Report {new_status} successfully.",
+            "promoted_incident_id": promoted_incident_id,
+            "message": (
+                "Report verified and promoted to incident successfully."
+                if new_status == "verified"
+                else "Report rejected successfully."
+            ),
         }
 
     except HTTPException:
