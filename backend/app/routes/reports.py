@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, status
-from psycopg2.extras import RealDictCursor
+from fastapi import APIRouter, HTTPException, status, Depends
+from psycopg2.extras import RealDictCursor, Json
 
+from app.core.security import require_roles
 from app.db import get_connection
 from app.schemas import PublicReportCreate, PublicReportResponse
 
@@ -82,7 +83,10 @@ def submit_public_report(payload: PublicReportCreate):
 
 
 @router.get("/public")
-def get_public_reports(status: str = "pending"):
+def get_public_reports(
+    status: str = "pending",
+    current_user: dict = Depends(require_roles(["admin"])),
+):
     allowed_statuses = {"pending", "verified", "rejected"}
 
     if status not in allowed_statuses:
@@ -132,8 +136,10 @@ def get_public_reports(status: str = "pending"):
 
 
 @router.get("/public/pending")
-def get_pending_public_reports():
-    return get_public_reports(status="pending")
+def get_pending_public_reports(
+    current_user: dict = Depends(require_roles(["admin"])),
+):
+    return get_public_reports(status="pending", current_user=current_user)
 
 
 def get_or_create_city(cur, city_name: str):
@@ -290,7 +296,11 @@ def promote_public_report_to_incident(cur, report):
 
 
 @router.patch("/public/{report_id}/status")
-def update_public_report_status(report_id: int, new_status: str):
+def update_public_report_status(
+    report_id: int,
+    new_status: str,
+    current_user: dict = Depends(require_roles(["admin"])),
+):
     allowed_statuses = {"verified", "rejected"}
 
     if new_status not in allowed_statuses:
@@ -345,6 +355,39 @@ def update_public_report_status(report_id: int, new_status: str):
 
             if new_status == "verified":
                 promoted_incident_id = promote_public_report_to_incident(cur, report)
+
+            cur.execute(
+                """
+                INSERT INTO verification_log (
+                    incident_id,
+                    actor_user_id,
+                    action,
+                    notes,
+                    old_values,
+                    new_values
+                )
+                VALUES (%s, %s, %s, %s, %s, %s);
+                """,
+                (
+                    promoted_incident_id,
+                    current_user["user_id"],
+                    "verify" if new_status == "verified" else "reject",
+                    f"Public report {new_status} by admin.",
+                    Json(
+                        {
+                            "public_report_id": report_id,
+                            "old_status": report["status"],
+                        }
+                    ),
+                    Json(
+                        {
+                            "public_report_id": report_id,
+                            "new_status": new_status,
+                            "promoted_incident_id": promoted_incident_id,
+                        }
+                    ),
+                ),
+            )
 
             conn.commit()
 

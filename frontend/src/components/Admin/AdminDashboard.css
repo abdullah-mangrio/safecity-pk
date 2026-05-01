@@ -110,3 +110,16 @@ th, td {
   color: white;
   border-color: #2563eb;
 }
+
+
+.header-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.admin-error {
+  color: #ff4d4f;
+  margin-bottom: 10px;
+}

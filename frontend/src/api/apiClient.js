@@ -1,5 +1,40 @@
 const BASE_URL = "http://127.0.0.1:8000"
 
+function getToken() {
+  return localStorage.getItem("safecity_token")
+}
+
+function authHeaders(extraHeaders = {}) {
+  const token = getToken()
+
+  return {
+    ...extraHeaders,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
+
+async function apiRequest(path, options = {}) {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    ...options,
+    headers: authHeaders(options.headers || {}),
+  })
+
+  const data = await response.json().catch(() => null)
+
+  if (response.status === 401) {
+   localStorage.removeItem("safecity_token")
+   localStorage.removeItem("safecity_user")
+
+   window.location.reload() // force re-login
+  }
+
+  if (!response.ok) {
+   throw new Error(data?.detail || "API request failed")
+ }
+
+  return data
+}
+
 function severityLabel(value) {
   if (value >= 5) return "critical"
   if (value >= 4) return "high"
@@ -24,16 +59,29 @@ function severityValue(label) {
   return map[label] || ""
 }
 
-async function apiRequest(path, options = {}) {
-  const response = await fetch(`${BASE_URL}${path}`, options)
+export async function loginUser(email, password) {
+  const data = await apiRequest("/auth/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password }),
+  })
 
-  const data = await response.json().catch(() => null)
-
-  if (!response.ok) {
-    throw new Error(data?.detail || "API request failed")
-  }
+  localStorage.setItem("safecity_token", data.access_token)
+  localStorage.setItem("safecity_user", JSON.stringify(data.user))
 
   return data
+}
+
+export function logoutUser() {
+  localStorage.removeItem("safecity_token")
+  localStorage.removeItem("safecity_user")
+}
+
+export function getCurrentUser() {
+  const user = localStorage.getItem("safecity_user")
+  return user ? JSON.parse(user) : null
 }
 
 export async function fetchCrimes(params = {}) {
@@ -93,21 +141,6 @@ export async function fetchDangerousHours() {
   }
 }
 
-export async function getPendingReports(status = "pending") {
-  try {
-    return await apiRequest(`/reports/public?status=${status}`)
-  } catch (error) {
-    console.error("API ERROR getPendingReports:", error)
-    return []
-  }
-}
-
-export async function updateReportStatus(id, status) {
-  return await apiRequest(`/reports/public/${id}/status?new_status=${status}`, {
-    method: "PATCH",
-  })
-}
-
 export async function submitPublicReport(payload) {
   return await apiRequest("/reports/public", {
     method: "POST",
@@ -116,6 +149,15 @@ export async function submitPublicReport(payload) {
     },
     body: JSON.stringify(payload),
   })
+}
+
+export async function getPendingReports(status = "pending") {
+  try {
+    return await apiRequest(`/reports/public?status=${status}`)
+  } catch (error) {
+    console.error("API ERROR getPendingReports:", error)
+    return []
+  }
 }
 
 export async function getReportsByStatus(status = "pending") {
@@ -127,21 +169,26 @@ export async function getReportsByStatus(status = "pending") {
   }
 }
 
+export async function updateReportStatus(id, status) {
+  return await apiRequest(`/reports/public/${id}/status?new_status=${status}`, {
+    method: "PATCH",
+  })
+}
 
-export const getUsers = async () => {
-  const res = await fetch(`${BASE_URL}/admin/users`);
-  return res.json();
-};
+export async function getUsers() {
+  try {
+    return await apiRequest("/admin/users")
+  } catch (error) {
+    console.error("API ERROR getUsers:", error)
+    return []
+  }
+}
 
-export const deactivateUser = async (userId) => {
-  const res = await fetch(
-    `${BASE_URL}/admin/users/${userId}/deactivate`,
-    {
-      method: "PATCH",
-    }
-  );
-  return res.json();
-};
+export async function deactivateUser(userId) {
+  return await apiRequest(`/admin/users/${userId}/deactivate`, {
+    method: "PATCH",
+  })
+}
 
 export async function getAdminStats() {
   try {
@@ -155,5 +202,15 @@ export async function getAdminStats() {
       total_reports: 0,
       pending_reports: 0,
     }
+  }
+}
+
+
+export async function getAuditLogs() {
+  try {
+    return await apiRequest("/admin/logs")
+  } catch (error) {
+    console.error("API ERROR getAuditLogs:", error)
+    return []
   }
 }

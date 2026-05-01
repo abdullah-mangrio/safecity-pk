@@ -11,13 +11,14 @@ import CrimeFilters from "./CrimeFilters"
 import HotspotTable from "./HotspotTable"
 import "./SecurityDashboard.css"
 
-function SecurityDashboard({ onBack }) {
+function SecurityDashboard({ onBack, onLogout }) {
   const [filters, setFilters] = useState({
     city: "",
     severity: "",
     status: "",
   })
 
+  const [error, setError] = useState("")
   const [crimes, setCrimes] = useState([])
   const [hotspots, setHotspots] = useState([])
   const [pendingReports, setPendingReports] = useState([])
@@ -46,6 +47,7 @@ function SecurityDashboard({ onBack }) {
       setPendingReports(pendingReportsData)
       setVerifiedReports(verifiedReportsData)
     } catch (error) {
+      setError("Failed to load dashboard data")
       console.error("Failed to load security dashboard data:", error)
     } finally {
       setLoading(false)
@@ -90,9 +92,12 @@ function SecurityDashboard({ onBack }) {
           </p>
         </div>
 
-        <button onClick={onBack}>Back to Home</button>
+        <div className="header-actions">
+  		<button onClick={onBack}>Back to Home</button>
+  		<button onClick={onLogout}>Sign Out</button>
+	</div>
       </header>
-
+      {error && <p className="error">{error}</p>}
       <section className="security-stats">
         <StatCard
           icon="📊"
@@ -145,7 +150,7 @@ function SecurityDashboard({ onBack }) {
             </div>
 
             {loading ? (
-              <p className="muted">Loading data...</p>
+              <p className="muted">⏳ Loading dashboard data...</p>
             ) : crimes.length === 0 ? (
               <p>No crime records found for selected filters.</p>
             ) : (

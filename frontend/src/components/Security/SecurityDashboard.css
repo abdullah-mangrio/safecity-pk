@@ -181,3 +181,19 @@
     flex-direction: column;
   }
 }
+
+
+.header-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.error {
+  color: #ff4d4f;
+  background: rgba(255, 77, 79, 0.1);
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}

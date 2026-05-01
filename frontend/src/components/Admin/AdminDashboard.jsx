@@ -1,17 +1,19 @@
 import { useEffect, useState } from "react"
+
 import {
   getPendingReports,
   updateReportStatus,
   getUsers,
   deactivateUser,
   getAdminStats,
+  getAuditLogs,
 } from "../../api/apiClient"
 
 import Badge from "../Common/Badge"
 import StatCard from "../Common/StatCard"
 import "./AdminDashboard.css"
 
-function AdminDashboard({ onBack }) {
+function AdminDashboard({ onBack, onLogout }) {
   const [activeTab, setActiveTab] = useState("pending")
   const [reports, setReports] = useState([])
   const [users, setUsers] = useState([])
@@ -28,6 +30,8 @@ function AdminDashboard({ onBack }) {
 
   const [reportActionId, setReportActionId] = useState(null)
   const [userActionId, setUserActionId] = useState(null)
+
+  const [logs, setLogs] = useState([])
 
   const [error, setError] = useState("")
 
@@ -51,6 +55,11 @@ function AdminDashboard({ onBack }) {
     }
   }
 
+  async function loadLogs() {
+    const data = await getAuditLogs()
+    setLogs(data)
+  }
+  
   async function loadUsers() {
     try {
       setLoadingUsers(true)
@@ -103,8 +112,9 @@ function AdminDashboard({ onBack }) {
   }, [activeTab])
 
   useEffect(() => {
-    loadUsers()
-    loadStats()
+  loadUsers()
+  loadStats()
+  loadLogs()
   }, [])
 
   return (
@@ -116,7 +126,10 @@ function AdminDashboard({ onBack }) {
           <p>Manage users, approvals, public reports, and platform overview.</p>
         </div>
 
-        <button onClick={onBack}>Back to Home</button>
+        <div className="header-actions">
+  		<button onClick={onBack}>Back to Home</button>
+  		<button onClick={onLogout}>Sign Out</button>
+	</div>
       </header>
 
       <section className="admin-stats">
@@ -172,7 +185,7 @@ function AdminDashboard({ onBack }) {
           </div>
 
           {loadingReports ? (
-            <p className="empty-state">Loading reports...</p>
+            <p className="empty-state">⏳ Loading reports...</p>
           ) : reports.length === 0 ? (
             <p className="empty-state">No {activeTab} reports.</p>
           ) : (
@@ -218,7 +231,37 @@ function AdminDashboard({ onBack }) {
             ))
           )}
         </section>
+        
+        <section className="admin-card">
+  <h2>Recent Activity Logs</h2>
 
+  {logs.length === 0 ? (
+    <p>No recent activity.</p>
+  ) : (
+    <table>
+      <thead>
+        <tr>
+          <th>Action</th>
+          <th>User ID</th>
+          <th>Notes</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {logs.map((log, index) => (
+          <tr key={index}>
+            <td>{log.action}</td>
+            <td>{log.actor_user_id}</td>
+            <td>{log.notes}</td>
+            <td>{new Date(log.created_at).toLocaleString()}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )}
+</section>
+        
+        
         <section className="admin-card">
           <h2>Users</h2>
 
