@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react"
 import "./App.css"
 
-import PublicDashboard from "./components/Public/PublicDashboard"
-import SecurityDashboard from "./components/Security/SecurityDashboard"
-import AdminDashboard from "./components/Admin/AdminDashboard"
-import LoginPage from "./components/Auth/LoginPage"
-import LandingPage from "./pages/LandingPage"
+import PublicDashboard from "./components/Public/PublicDashboard.jsx"
+import SecurityDashboard from "./components/Security/SecurityDashboard.jsx"
+import AdminDashboard from "./components/Admin/AdminDashboard.jsx"
+import LoginPage from "./components/Auth/LoginPage.jsx"
+import LandingPage from "./pages/LandingPage.jsx"
 
 import { getCurrentUser, loginUser, logoutUser } from "./api/apiClient"
 

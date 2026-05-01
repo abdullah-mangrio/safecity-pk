@@ -1,109 +1,91 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
+import L from "leaflet"
+
 import Badge from "../Common/Badge"
-import { fetchHotspots } from "../../api/apiClient"
+import { fetchCrimeMap } from "../../api/apiClient"
 import "./AreaSafetyMap.css"
 
-const markerPositions = [
-  { top: "28%", left: "32%" },
-  { top: "58%", left: "68%" },
-  { top: "42%", left: "52%" },
-  { top: "72%", left: "26%" },
-  { top: "35%", left: "78%" },
-  { top: "78%", left: "48%" },
-]
+const radarIcon = L.divIcon({
+  className: "radar-marker",
+  html: `<span class="radar-dot"></span>`,
+  iconSize: [26, 26],
+  iconAnchor: [13, 13],
+})
 
-function normalizeRiskLevel(spot) {
-  return spot.riskLevel || spot.risk_level || "medium"
-}
-
-function normalizeIncidents(spot) {
-  return spot.incidents || spot.count || spot.crime_count || 0
-}
-
-function AreaSafetyMap() {
-  const [hotspots, setHotspots] = useState([])
+function AreaSafetyMap({ filters }) {
+  const [incidents, setIncidents] = useState([])
   const [loading, setLoading] = useState(true)
 
+  const activeFilters = useMemo(() => {
+    return filters || { city: "", severity: "" }
+  }, [filters])
+
   useEffect(() => {
-    async function loadHotspots() {
+    async function loadMapData() {
       try {
         setLoading(true)
-        const data = await fetchHotspots()
-
-        const mappedData = data.map((spot, index) => ({
-          ...spot,
-          id: spot.id || index,
-          area: spot.area || "Unknown Area",
-          city: spot.city || "Unknown City",
-          riskLevel: normalizeRiskLevel(spot),
-          incidents: normalizeIncidents(spot),
-          top: spot.top || markerPositions[index % markerPositions.length].top,
-          left: spot.left || markerPositions[index % markerPositions.length].left,
-        }))
-
-        setHotspots(mappedData)
+        const data = await fetchCrimeMap(activeFilters)
+        setIncidents(data)
       } catch (error) {
-        console.error("Failed to load public hotspots:", error)
-        setHotspots([])
+        console.error("Map load error:", error)
+        setIncidents([])
       } finally {
         setLoading(false)
       }
     }
 
-    loadHotspots()
-  }, [])
+    loadMapData()
+  }, [activeFilters])
 
   return (
     <section className="map-card">
       <div className="map-card__header">
         <div>
-          <h2>Area Safety Map</h2>
-          <p>Public risk overview with live hotspot indicators</p>
+          <h2>Crime Map</h2>
+          <p>Live incidents based on selected filters</p>
         </div>
 
-        <Badge variant="critical">Live Alerts</Badge>
+        <Badge variant="critical">Live Radar</Badge>
       </div>
 
-      <div className="city-map">
-        <div className="map-road road-1"></div>
-        <div className="map-road road-2"></div>
-        <div className="map-road road-3"></div>
+      <div className="city-map real-leaflet-map">
+        {loading && <p className="map-loading">Loading map...</p>}
 
-        {loading && <p className="map-loading">Loading hotspots...</p>}
+        <MapContainer
+          center={[30.3753, 69.3451]}
+          zoom={5}
+          scrollWheelZoom={false}
+          className="leaflet-map"
+        >
+          <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
 
-        {!loading &&
-          hotspots.map((spot) => (
-            <div
-              key={spot.id}
-              className={`map-marker marker-${spot.riskLevel}`}
-              style={{ top: spot.top, left: spot.left }}
-              title={`${spot.area}, ${spot.city} - ${spot.riskLevel}`}
-            >
-              <span></span>
+          {!loading &&
+            incidents.map((incident) => {
+              if (!incident.lat || !incident.lng) return null
 
-              <div className="marker-label">
-                {spot.area}
-                <small>
-                  {spot.riskLevel} • {spot.incidents} cases
-                </small>
-              </div>
-            </div>
-          ))}
+              return (
+                <Marker
+                  key={incident.id}
+                  position={[incident.lat, incident.lng]}
+                  icon={radarIcon}
+                >
+                  <Popup>
+                    <strong>{incident.crime_type}</strong>
+                    <br />
+                    Severity: {incident.severity}
+                  </Popup>
+                </Marker>
+              )
+            })}
+        </MapContainer>
       </div>
 
       <div className="map-legend">
-        <span>
-          <i className="legend critical"></i> Critical
-        </span>
-        <span>
-          <i className="legend high"></i> High
-        </span>
-        <span>
-          <i className="legend medium"></i> Medium
-        </span>
-        <span>
-          <i className="legend low"></i> Low
-        </span>
+        <span><i className="legend critical"></i> Critical</span>
+        <span><i className="legend high"></i> High</span>
+        <span><i className="legend medium"></i> Medium</span>
+        <span><i className="legend low"></i> Low</span>
       </div>
     </section>
   )

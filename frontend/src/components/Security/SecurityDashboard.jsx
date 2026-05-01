@@ -10,6 +10,9 @@ import Badge from "../Common/Badge"
 import CrimeFilters from "./CrimeFilters"
 import HotspotTable from "./HotspotTable"
 import "./SecurityDashboard.css"
+import AreaSafetyMap from "../Public/AreaSafetyMap"
+
+
 
 function SecurityDashboard({ onBack, onLogout }) {
   const [filters, setFilters] = useState({
@@ -133,6 +136,14 @@ function SecurityDashboard({ onBack, onLogout }) {
       </section>
 
       <section className="security-panel">
+      <section className="security-panel">
+  <div className="section-heading">
+    <h2>Filtered Crime Map</h2>
+    <p>Map updates based on selected filters</p>
+  </div>
+
+  <AreaSafetyMap filters={filters} />
+</section>
         <div className="section-heading">
           <h2>Crime Filters</h2>
           <p>Filter records by operational criteria</p>

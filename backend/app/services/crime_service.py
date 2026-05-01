@@ -55,19 +55,66 @@ def fetch_crimes(
         cur.execute(query, tuple(params))
         rows = cur.fetchall()
 
-        result = []
-        for row in rows:
-            result.append({
+        return [
+            {
                 "incident_id": row[0],
                 "city": row[1],
                 "incident_type": row[2],
                 "occurred_at": row[3],
                 "severity": row[4],
-                "status": row[5]
-            })
-
-        return result
+                "status": row[5],
+            }
+            for row in rows
+        ]
 
     finally:
         cur.close()
         conn.close()
+
+
+def get_crimes_for_map(conn, city=None, severity=None):
+    cur = conn.cursor()
+
+    try:
+        query = """
+            SELECT 
+                i.incident_id,
+                i.latitude,
+                i.longitude,
+                i.severity,
+                it.name AS crime_type
+            FROM incident i
+            JOIN incident_type it 
+                ON i.incident_type_id = it.incident_type_id
+            WHERE i.latitude IS NOT NULL
+              AND i.longitude IS NOT NULL
+        """
+
+        params = []
+
+        if city is not None:
+            query += " AND i.city_id = %s"
+            params.append(city)
+
+        if severity is not None:
+            query += " AND i.severity = %s"
+            params.append(severity)
+
+        query += " ORDER BY i.occurred_at DESC LIMIT 500"
+
+        cur.execute(query, tuple(params))
+        rows = cur.fetchall()
+
+        return [
+            {
+                "id": row[0],
+                "lat": float(row[1]),
+                "lng": float(row[2]),
+                "severity": row[3],
+                "crime_type": row[4],
+            }
+            for row in rows
+        ]
+
+    finally:
+        cur.close()

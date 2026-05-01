@@ -1,6 +1,42 @@
+import { useEffect, useState } from "react"
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
+import L from "leaflet"
+import { fetchCrimeMap } from "../api/apiClient"
 import "./LandingPage.css"
 
+const radarIcon = L.divIcon({
+  className: "radar-marker",
+  html: `<span class="radar-dot"></span>`,
+  iconSize: [26, 26],
+  iconAnchor: [13, 13],
+})
+
+function getSeverityLabel(severity) {
+  if (severity >= 5) return "Critical"
+  if (severity >= 4) return "High Alert"
+  if (severity >= 3) return "Medium"
+  return "Low"
+}
+
 function LandingPage({ onEnterCitizen, onEnterSecurity, onEnterAdmin }) {
+  const [incidents, setIncidents] = useState([])
+
+  useEffect(() => {
+    async function loadLandingMap() {
+      try {
+        const data = await fetchCrimeMap()
+        setIncidents(data.slice(0, 8))
+      } catch (error) {
+        console.error("Failed to load landing map:", error)
+        setIncidents([])
+      }
+    }
+
+    loadLandingMap()
+  }, [])
+
+  const topIncidents = incidents.slice(0, 3)
+
   return (
     <main className="landing">
       <nav className="landing-nav">
@@ -46,25 +82,49 @@ function LandingPage({ onEnterCitizen, onEnterSecurity, onEnterAdmin }) {
           </div>
 
           <div className="risk-map-preview">
-            <span className="hotspot hotspot-1"></span>
-            <span className="hotspot hotspot-2"></span>
-            <span className="hotspot hotspot-3 medium"></span>
-            <span className="hotspot hotspot-4 low"></span>
+            <MapContainer
+              center={[30.3753, 69.3451]}
+              zoom={5}
+              scrollWheelZoom={false}
+              dragging={false}
+              zoomControl={false}
+              attributionControl={false}
+              className="landing-leaflet-map"
+            >
+              <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+
+              {incidents.map((incident) => (
+                <Marker
+                  key={incident.id}
+                  position={[incident.lat, incident.lng]}
+                  icon={radarIcon}
+                >
+                  <Popup>
+                    <strong>{incident.crime_type}</strong>
+                    <br />
+                    Severity: {getSeverityLabel(incident.severity)}
+                  </Popup>
+                </Marker>
+              ))}
+            </MapContainer>
           </div>
 
           <div className="risk-list">
-            <div>
-              <strong>Karachi • Saddar</strong>
-              <span className="risk high">High Alert</span>
-            </div>
-            <div>
-              <strong>Peshawar • Hayatabad</strong>
-              <span className="risk critical">Critical</span>
-            </div>
-            <div>
-              <strong>Islamabad • F-7</strong>
-              <span className="risk medium">Medium</span>
-            </div>
+            {topIncidents.length === 0 ? (
+              <div>
+                <strong>No live incidents</strong>
+                <span className="risk medium">Clear</span>
+              </div>
+            ) : (
+              topIncidents.map((incident) => (
+                <div key={incident.id}>
+                  <strong>{incident.crime_type}</strong>
+                  <span className="risk high">
+                    {getSeverityLabel(incident.severity)}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </section>

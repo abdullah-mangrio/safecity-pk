@@ -3,8 +3,9 @@ from datetime import date
 from fastapi import APIRouter, Depends
 
 from app.core.security import require_roles
+from app.db import get_connection
 from app.schemas import CrimeResponse
-from app.services.crime_service import fetch_crimes
+from app.services.crime_service import fetch_crimes, get_crimes_for_map
 
 router = APIRouter()
 
@@ -27,3 +28,12 @@ def get_crimes(
         date_from=date_from,
         date_to=date_to,
     )
+
+
+@router.get("/crimes/map")
+def crimes_map(city: int | None = None, severity: int | None = None):
+    conn = get_connection()
+    try:
+        return get_crimes_for_map(conn, city=city, severity=severity)
+    finally:
+        conn.close()

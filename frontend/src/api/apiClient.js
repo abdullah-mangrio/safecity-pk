@@ -22,15 +22,14 @@ async function apiRequest(path, options = {}) {
   const data = await response.json().catch(() => null)
 
   if (response.status === 401) {
-   localStorage.removeItem("safecity_token")
-   localStorage.removeItem("safecity_user")
-
-   window.location.reload() // force re-login
+    localStorage.removeItem("safecity_token")
+    localStorage.removeItem("safecity_user")
+    throw new Error("Unauthorized")
   }
 
   if (!response.ok) {
-   throw new Error(data?.detail || "API request failed")
- }
+    throw new Error(data?.detail || "API request failed")
+  }
 
   return data
 }
@@ -57,6 +56,14 @@ function severityValue(label) {
   }
 
   return map[label] || ""
+}
+
+const cityMap = {
+  Karachi: 1,
+  Lahore: 2,
+  Islamabad: 3,
+  Rawalpindi: 4,
+  Peshawar: 5,
 }
 
 export async function loginUser(email, password) {
@@ -112,6 +119,24 @@ export async function fetchCrimes(params = {}) {
     console.error("API ERROR fetchCrimes:", error)
     return []
   }
+}
+
+export async function fetchCrimeMap(params = {}) {
+  const cleanParams = {}
+
+  if (params.city) cleanParams.city = cityMap[params.city]
+  if (params.severity) cleanParams.severity = severityValue(params.severity)
+
+  const query = new URLSearchParams(cleanParams).toString()
+  const endpoint = query ? `/crimes/map?${query}` : "/crimes/map"
+
+  const response = await fetch(`${BASE_URL}${endpoint}`)
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch crime map data")
+  }
+
+  return response.json()
 }
 
 export async function fetchHotspots() {
@@ -204,7 +229,6 @@ export async function getAdminStats() {
     }
   }
 }
-
 
 export async function getAuditLogs() {
   try {
