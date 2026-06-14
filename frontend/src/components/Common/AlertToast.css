@@ -1,0 +1,39 @@
+.alert-toast {
+  width: 320px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+}
+
+.alert-title {
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.alert-message {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.alert-critical {
+  border-left: 4px solid var(--danger);
+}
+
+.alert-medium {
+  border-left: 4px solid var(--warning);
+}
+
+.alert-low {
+  border-left: 4px solid var(--success);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(120%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}

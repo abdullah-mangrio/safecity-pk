@@ -1,0 +1,77 @@
+.crime-filters {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.crime-filters label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.crime-filters select {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: #020617;
+  color: var(--text-primary);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+@media (max-width: 800px) {
+  .crime-filters {
+    grid-template-columns: 1fr;
+  }
+}
+
+.crime-filters {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+}
+
+.filter-group label {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+
+.filter-group select {
+  background: #020617;
+  border: 1px solid #1e293b;
+  color: white;
+  padding: 10px 12px;
+  border-radius: 10px;
+  outline: none;
+  transition: 0.2s;
+}
+
+.filter-group select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.filter-reset button {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid #1e293b;
+  background: #020617;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.filter-reset button:hover {
+  background: #0f172a;
+}

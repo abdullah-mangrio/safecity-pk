@@ -1,0 +1,284 @@
+import { useEffect, useMemo, useState } from "react"
+import {
+  fetchCrimes,
+  fetchHotspots,
+  getReportsByStatus,
+  updateReportStatus,
+} from "../../api/apiClient"
+import StatCard from "../Common/StatCard"
+import Badge from "../Common/Badge"
+import CrimeFilters from "./CrimeFilters"
+import HotspotTable from "./HotspotTable"
+import "./SecurityDashboard.css"
+import AreaSafetyMap from "../Public/AreaSafetyMap"
+
+
+
+function SecurityDashboard({ onBack, onLogout }) {
+  const [filters, setFilters] = useState({
+    city: "",
+    severity: "",
+    status: "",
+  })
+
+  const [error, setError] = useState("")
+  const [crimes, setCrimes] = useState([])
+  const [hotspots, setHotspots] = useState([])
+  const [pendingReports, setPendingReports] = useState([])
+  const [verifiedReports, setVerifiedReports] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [actionLoadingId, setActionLoadingId] = useState(null)
+
+  async function loadDashboardData() {
+    try {
+      setLoading(true)
+
+      const [
+        crimesData,
+        hotspotsData,
+        pendingReportsData,
+        verifiedReportsData,
+      ] = await Promise.all([
+        fetchCrimes(filters),
+        fetchHotspots(),
+        getReportsByStatus("pending"),
+        getReportsByStatus("verified"),
+      ])
+
+      setCrimes(crimesData)
+      setHotspots(hotspotsData)
+      setPendingReports(pendingReportsData)
+      setVerifiedReports(verifiedReportsData)
+    } catch (error) {
+      setError("Failed to load dashboard data")
+      console.error("Failed to load security dashboard data:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+  loadDashboardData()
+}, [filters])
+
+
+
+  const highSeverityCount = crimes.filter(
+    (crime) => crime.severity === "high" || crime.severity === "critical"
+  ).length
+
+  const openCases = crimes.filter(
+    (crime) => crime.status === "reported" || crime.status === "under_review"
+  ).length
+
+  async function handleReportAction(reportId, newStatus) {
+    try {
+      setActionLoadingId(reportId)
+      await updateReportStatus(reportId, newStatus)
+      await loadDashboardData()
+    } catch (error) {
+      console.error(`Failed to ${newStatus} report:`, error)
+      alert(`Failed to ${newStatus} report. Please try again.`)
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
+
+  return (
+    <main className="security-dashboard">
+      <header className="security-header">
+        <div>
+          <p className="eyebrow">Security Department</p>
+          <h1>Crime Intelligence Dashboard</h1>
+          <p>
+            Operational analytics for hotspot monitoring and public report verification.
+          </p>
+        </div>
+
+        <div className="header-actions">
+  		<button onClick={onBack}>Back to Home</button>
+  		<button onClick={onLogout}>Sign Out</button>
+	</div>
+      </header>
+      {error && <p className="error">{error}</p>}
+      <section className="security-stats">
+        <StatCard
+          icon="📊"
+          label="Total Crimes"
+          value={crimes.length}
+          subtext="Recorded incidents"
+          color="blue"
+        />
+
+        <StatCard
+          icon="🚨"
+          label="High Severity"
+          value={highSeverityCount}
+          subtext="High + critical cases"
+          color="red"
+        />
+
+        <StatCard
+          icon="📂"
+          label="Open Cases"
+          value={openCases}
+          subtext="Need attention"
+          color="amber"
+        />
+
+        <StatCard
+          icon="✅"
+          label="Verified Reports"
+          value={verifiedReports.length}
+          subtext="Citizen reports verified"
+          color="green"
+        />
+      </section>
+
+      <section className="security-panel">
+      <section className="security-panel">
+  <div className="section-heading">
+    <h2>Filtered Crime Map</h2>
+    <p>Map updates based on selected filters</p>
+  </div>
+
+  <AreaSafetyMap filters={filters} />
+</section>
+        <div className="section-heading">
+          <h2>Crime Filters</h2>
+          <p>Filter records by operational criteria</p>
+        </div>
+
+        <CrimeFilters filters={filters} onChange={setFilters} />
+      </section>
+
+      <section className="security-grid">
+        <div className="security-main">
+          <section className="crime-table-card">
+            <div className="section-heading">
+              <h2>Crime Records</h2>
+              <p>Filtered incident records from database</p>
+            </div>
+
+            {loading ? (
+              <p className="muted">⏳ Loading dashboard data...</p>
+            ) : crimes.length === 0 ? (
+              <p>No crime records found for selected filters.</p>
+            ) : (
+              <table className="crime-table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>City</th>
+                    <th>Area</th>
+                    <th>Severity</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {crimes.map((crime) => (
+                    <tr key={crime.id}>
+                      <td>{crime.type}</td>
+                      <td>{crime.city}</td>
+                      <td>{crime.area}</td>
+                      <td>
+                        <Badge variant={crime.severity}>
+                          {crime.severity}
+                        </Badge>
+                      </td>
+                      <td>
+                        <Badge variant={crime.status}>
+                          {crime.status}
+                        </Badge>
+                      </td>
+                      <td>{crime.date}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+
+          <HotspotTable hotspots={hotspots} />
+        </div>
+
+        <aside className="security-side">
+          <section className="reports-panel">
+            <div className="section-heading">
+              <h2>Public Reports</h2>
+              <p>Citizen submissions awaiting review</p>
+            </div>
+
+            {loading ? (
+              <p>Loading public reports...</p>
+            ) : pendingReports.length === 0 ? (
+              <p>No pending public reports.</p>
+            ) : (
+              pendingReports.map((report) => (
+                <article key={report.id} className="public-report-card">
+                  <div className="report-top">
+                    <Badge variant={report.severity || "medium"}>
+                      {report.severity || "medium"}
+                    </Badge>
+                    <Badge variant={report.status}>{report.status}</Badge>
+                  </div>
+
+                  <h3>{report.crime_type || "Public Report"}</h3>
+                  <p>
+                    {report.incident_type} • {report.area}, {report.city}
+                  </p>
+
+                  <div className="report-actions">
+                    <button
+                      className="verify-btn"
+                      disabled={actionLoadingId === report.id}
+			onClick={() => 
+			handleReportAction(report.id, "verified")
+		      }
+                      
+                    >
+                      {actionLoadingId === report.id
+                        ? "Saving..."
+                        : "Verify"}
+                    </button>
+
+                    <button
+                      className="reject-btn"
+                      disabled={actionLoadingId === report.id}
+			onClick={() => 
+			handleReportAction(report.id, "rejected")
+		      }
+                    >
+                      {actionLoadingId === report.id
+                        ? "Saving..."
+                        : "Reject"}
+                    </button>
+                  </div>
+                </article>
+              ))
+            )}
+          </section>
+
+          <section className="analytics-card">
+            <h2>Analytics Summary</h2>
+            <p>
+              Peak risk window detected between evening and late night hours.
+            </p>
+
+            <div className="mini-bars">
+              <span style={{ height: "35%" }}></span>
+              <span style={{ height: "55%" }}></span>
+              <span style={{ height: "45%" }}></span>
+              <span style={{ height: "80%" }}></span>
+              <span style={{ height: "65%" }}></span>
+            </div>
+          </section>
+        </aside>
+      </section>
+    </main>
+  )
+}
+
+export default SecurityDashboard

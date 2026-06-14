@@ -1,0 +1,29 @@
+.tip-popup {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(17, 24, 39, 0.95);
+  border: 1px solid var(--border);
+  padding: 16px;
+  border-radius: 12px;
+  width: 280px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+  animation: fadeIn 0.3s ease;
+}
+
+.tip-popup strong {
+  color: var(--success);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.tip-popup p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
