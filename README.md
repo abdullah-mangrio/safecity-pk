@@ -259,7 +259,14 @@ Dashboards + Analytics + Map update from DB
 
 ## 📜 License
 
-*(Add your license here if required)*
+This project is licensed under a custom Portfolio License.
+
+Copyright © 2026 Abdullah Mangrio.
+All Rights Reserved.
+
+The source code is provided for portfolio, educational, and evaluation purposes only. Commercial use, redistribution, modification, deployment, or creation of derivative works is prohibited without prior written permission from the author.
+
+See the LICENSE file for details.
 
 ---
 
