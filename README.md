@@ -9,8 +9,8 @@ SafeCity PK is a full-stack crime intelligence platform that helps citizens repo
 
 | Service | URL |
 |---------|-----|
-| Frontend | *(Add link)* |
-| Backend | *(Add link)* |
+| Frontend | *(LOcal Only)* |
+| Backend | *(Local Only)* |
 | Health Check | `GET /` → `API running ✅` |
 
 ---
