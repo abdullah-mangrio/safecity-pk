@@ -9,9 +9,11 @@ SafeCity PK is a full-stack crime intelligence platform that helps citizens repo
 
 | Service | URL |
 |---------|-----|
-| Frontend | *(LOcal Only)* |
-| Backend | *(Local Only)* |
-| Health Check | `GET /` → `API running ✅` |
+| Service | Status |
+|---------|--------|
+| Frontend | Local only |
+| Backend | Local only |
+| Health Check | `GET /` → `SafeCity PK API running` |
 
 ---
 
@@ -264,3 +266,15 @@ Dashboards + Analytics + Map update from DB
 ## 🏁 Final Note
 
 SafeCity PK started as a **DBMS course project** and evolved into a **full-stack crime intelligence system prototype** with real-world workflows, analytics, security, and map-based visualization.
+
+---
+
+## 🔐 Security & Privacy Note
+
+This project is a portfolio-grade academic prototype. Demo credentials and seeded data are for local testing only. It should not be used with real citizen reports or sensitive public-safety data without proper legal, privacy, infrastructure, and security review.
+
+---
+
+## 🔐 Security & Privacy Note
+
+This project is a portfolio-grade academic prototype. Demo credentials and seeded data are for local testing only. It should not be used with real citizen reports or sensitive public-safety data without proper legal, privacy, infrastructure, and security review.
