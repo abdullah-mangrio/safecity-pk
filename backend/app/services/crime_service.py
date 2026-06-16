@@ -79,15 +79,17 @@ def get_crimes_for_map(conn, city=None, severity=None):
         query = """
             SELECT 
                 i.incident_id,
-                i.latitude,
-                i.longitude,
+                a.lat,
+                a.lng,
                 i.severity,
                 it.name AS crime_type
             FROM incident i
+            JOIN area a
+                ON i.area_id = a.area_id
             JOIN incident_type it 
                 ON i.incident_type_id = it.incident_type_id
-            WHERE i.latitude IS NOT NULL
-              AND i.longitude IS NOT NULL
+            WHERE a.lat IS NOT NULL
+              AND a.lng IS NOT NULL
         """
 
         params = []
